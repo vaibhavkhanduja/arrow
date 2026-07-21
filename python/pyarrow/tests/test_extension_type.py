@@ -1400,6 +1400,24 @@ def test_uuid_extension():
     assert isinstance(array[0], pa.UuidScalar)
 
 
+def test_parquet_variant_extension():
+    storage_type = pa.struct([
+        pa.field("metadata", pa.binary(), nullable=False),
+        pa.field("value", pa.binary(), nullable=False),
+    ])
+    variant_type = pa.variant(storage_type)
+
+    assert variant_type.extension_name == "arrow.parquet.variant"
+    assert variant_type.storage_type == storage_type
+    assert variant_type.__class__ is pa.VariantType
+
+    with pytest.raises(pa.ArrowInvalid, match="Invalid storage type"):
+        pa.variant(pa.struct([
+            pa.field("metadata", pa.binary()),
+            pa.field("value", pa.binary(), nullable=False),
+        ]))
+
+
 def test_uuid_scalar_from_python():
     # Test with explicit type
     py_uuid = uuid4()

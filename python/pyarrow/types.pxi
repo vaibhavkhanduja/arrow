@@ -1986,6 +1986,17 @@ cdef class UuidType(BaseExtensionType):
         return UuidScalar
 
 
+cdef class VariantType(BaseExtensionType):
+    """Concrete class for the canonical Parquet Variant extension type."""
+
+    cdef void init(self, const shared_ptr[CDataType]& type) except *:
+        BaseExtensionType.init(self, type)
+        self.variant_ext_type = <const CVariantType*> type.get()
+
+    def __reduce__(self):
+        return variant, (self.storage_type,)
+
+
 cdef class FixedShapeTensorType(BaseExtensionType):
     """
     Concrete class for fixed shape tensor extension type.
@@ -5557,6 +5568,30 @@ def uuid():
     cdef UuidType out = UuidType.__new__(UuidType)
     c_uuid_ext_type = GetResultValue(CUuidType.Make())
     out.init(c_uuid_ext_type)
+    return out
+
+
+def variant(DataType storage_type):
+    """Create a canonical Parquet Variant extension type.
+
+    Parameters
+    ----------
+    storage_type : DataType
+        An unshredded Variant storage struct containing non-nullable binary
+        fields named ``metadata`` and ``value``.
+
+    Returns
+    -------
+    type : VariantType
+
+    Notes
+    -----
+    When written to Parquet, this type is represented by a group annotated
+    with the ``VARIANT`` logical type.
+    """
+    cdef VariantType out = VariantType.__new__(VariantType)
+    c_variant_ext_type = GetResultValue(CVariantType.Make(storage_type.sp_type))
+    out.init(c_variant_ext_type)
     return out
 
 

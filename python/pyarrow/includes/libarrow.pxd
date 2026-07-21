@@ -3051,6 +3051,13 @@ cdef extern from "arrow/extension/uuid.h" namespace "arrow::extension" nogil:
         pass
 
 
+cdef extern from "arrow/extension/parquet_variant.h" namespace "arrow::extension" nogil:
+    cdef cppclass CVariantType" arrow::extension::VariantExtensionType"(CExtensionType):
+
+        @staticmethod
+        CResult[shared_ptr[CDataType]] Make(shared_ptr[CDataType] storage_type)
+
+
 cdef extern from "arrow/extension/fixed_shape_tensor.h" namespace "arrow::extension" nogil:
     cdef cppclass CFixedShapeTensorType \
             " arrow::extension::FixedShapeTensorType"(CExtensionType):

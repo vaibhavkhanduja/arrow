@@ -75,6 +75,7 @@ These should be used to create Arrow data types and schemas.
    bool8
    uuid
    json_
+   variant
    field
    schema
    from_numpy_dtype
@@ -145,6 +146,7 @@ implemented by PyArrow.
    OpaqueType
    JsonType
    UuidType
+   VariantType
    Bool8Type
 
 .. _api.types.checking:

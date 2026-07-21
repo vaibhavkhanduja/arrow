@@ -215,6 +215,10 @@ cdef class JsonType(BaseExtensionType):
     cdef:
         const CJsonType* json_ext_type
 
+cdef class VariantType(BaseExtensionType):
+    cdef:
+        const CVariantType* variant_ext_type
+
 
 cdef class _Metadata(_Weakrefable):
     # required because KeyValueMetadata also extends collections.abc.Mapping

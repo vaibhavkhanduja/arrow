@@ -137,6 +137,8 @@ cdef api object pyarrow_wrap_data_type(
             out = UuidType.__new__(UuidType)
         elif extension_name == b"arrow.json":
             out = JsonType.__new__(JsonType)
+        elif extension_name == b"arrow.parquet.variant":
+            out = VariantType.__new__(VariantType)
         else:
             out = BaseExtensionType.__new__(BaseExtensionType)
     else:
