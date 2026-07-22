@@ -11,6 +11,7 @@ By storing JSON as a variant, you can efficiently represent heterogeneous data
 while maintaining compatibility with the Parquet format.
 """
 
+import base64
 import json as json_module
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -320,10 +321,123 @@ def example_mixed_null_handling():
     return result
 
 
-def example_performance_large_dataset():
-    """Example 6: Writing large dataset as variant."""
+def example_heterogeneous_json_documents():
+    """Example 6: Documents with different keys and value types."""
     print("=" * 70)
-    print("Example 6: Large Dataset Performance")
+    print("Example 6: Heterogeneous JSON Documents")
+    print("=" * 70)
+
+    # A Variant column does not require every row to have the same keys or
+    # value types. For example, "identifier" is an integer in one document
+    # and a string in another, while "details" can be an object, an array, or
+    # a string. Each document is independently encoded as a Variant value.
+    documents = [
+        {
+            "identifier": 101,
+            "name": "Alice",
+            "active": True,
+            "details": {"department": "engineering", "level": 3},
+        },
+        {
+            "identifier": "product-42",
+            "price": 19.95,
+            "details": ["sale", "featured"],
+        },
+        {
+            "event": "login",
+            "attempts": 2,
+            "details": "authenticated with a security key",
+        },
+        {
+            "name": "Unknown user",
+            "active": None,
+        },
+        None,
+    ]
+    json_documents = [
+        json_module.dumps(document) if document is not None else None
+        for document in documents
+    ]
+
+    variant_array = create_json_variant_array(json_documents)
+    table = pa.table({"document": variant_array})
+
+    output_file = "/tmp/example_heterogeneous_documents.parquet"
+    pq.write_table(table, output_file, store_schema=True)
+    result = pq.read_table(output_file, arrow_extensions_enabled=True)
+    documents_match = validate_json_variant_column(table, result, "document")
+
+    print(f"Input documents:\n{documents}\n")
+    print(f"Read-back schema:\n{result.schema}\n")
+    print(f"✓ Wrote heterogeneous documents to {output_file}")
+    print(f"✓ Variant buffers round-tripped successfully: {documents_match}\n")
+
+    return result
+
+
+def example_time_series_with_image_blobs():
+    """Example 7: Time-series events containing optional image data."""
+    print("=" * 70)
+    print("Example 7: Time-Series Data with Image Blobs")
+    print("=" * 70)
+
+    # JSON has no native binary type, so applications commonly encode image
+    # bytes as Base64 and record the media type alongside them. These small
+    # byte strings stand in for images captured by a sensor or camera.
+    image_1 = b"\x89PNG\r\n\x1a\n" + b"first-image-payload"
+    image_2 = b"\xff\xd8\xff" + b"second-image-payload" + b"\xff\xd9"
+
+    events = [
+        {
+            "timestamp": "2026-07-22T10:00:00.000Z",
+            "device_id": "camera-7",
+            "temperature_c": 21.4,
+            "image": {
+                "media_type": "image/png",
+                "encoding": "base64",
+                "data": base64.b64encode(image_1).decode("ascii"),
+            },
+        },
+        {
+            "timestamp": "2026-07-22T10:00:01.000Z",
+            "device_id": "camera-7",
+            "temperature_c": 21.5,
+            "motion_detected": False,
+        },
+        {
+            "timestamp": "2026-07-22T10:00:02.000Z",
+            "device_id": "camera-7",
+            "temperature_c": 21.7,
+            "motion_detected": True,
+            "image": {
+                "media_type": "image/jpeg",
+                "encoding": "base64",
+                "data": base64.b64encode(image_2).decode("ascii"),
+            },
+        },
+    ]
+    json_events = [json_module.dumps(event) for event in events]
+
+    variant_array = create_json_variant_array(json_events)
+    table = pa.table({"event": variant_array})
+
+    output_file = "/tmp/example_time_series_images.parquet"
+    pq.write_table(table, output_file, store_schema=True)
+    result = pq.read_table(output_file, arrow_extensions_enabled=True)
+    events_match = validate_json_variant_column(table, result, "event")
+
+    print(f"Time-series events:\n{events}\n")
+    print(f"Read-back schema:\n{result.schema}\n")
+    print(f"✓ Wrote time-series events to {output_file}")
+    print(f"✓ Variant buffers round-tripped successfully: {events_match}\n")
+
+    return result
+
+
+def example_performance_large_dataset():
+    """Example 8: Writing large dataset as variant."""
+    print("=" * 70)
+    print("Example 8: Large Dataset Performance")
     print("=" * 70)
     
     import time
@@ -383,6 +497,8 @@ def main():
     example_nested_json()
     example_json_arrays_in_variant()
     example_mixed_null_handling()
+    example_heterogeneous_json_documents()
+    example_time_series_with_image_blobs()
     example_performance_large_dataset()
     
     print("=" * 70)
